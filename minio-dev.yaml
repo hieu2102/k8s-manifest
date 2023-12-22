@@ -1,0 +1,126 @@
+# Deploys a new Namespace for the MinIO Pod
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: minio-dev # Change this value if you want a different namespace name
+  labels:
+    name: minio-dev # Change this value to match metadata.name
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: minio-pvc
+  namespace: minio-dev
+spec:
+  resources:
+    requests:
+      storage: 10Gi
+  accessModes:
+    - ReadWriteOnce
+  volumeMode: Filesystem
+  storageClassName: longhorn
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    app: minio
+    app.kubernetes.io/name: minio
+  name: minio
+  namespace: minio-dev # Change this value to match the namespace metadata.name
+spec:
+  containers:
+    - name: minio
+      image: quay.io/minio/minio:latest
+      ports:
+        - containerPort: 9090
+          name: console-port
+        - containerPort: 9000
+          name: svc-port
+      resources:
+        requests:
+          memory: "2Gi"
+          cpu: "2"
+        limits:
+          memory: "2Gi"
+          cpu: "2"
+      command:
+        - /bin/bash
+        - -c
+      args:
+        - minio server /data --console-address :9090
+      volumeMounts:
+        - mountPath: /data
+          name: minio-storage # Corresponds to the `spec.volumes` Persistent Volume
+  volumes:
+    - name: minio-storage
+      persistentVolumeClaim:
+        claimName: minio-pvc
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: minio-service
+  namespace: minio-dev
+spec:
+  selector:
+    app.kubernetes.io/name: minio
+  ports:
+    - name: svc-port
+      protocol: TCP
+      port: 9000
+      targetPort: svc-port
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: minio-console
+  namespace: minio-dev
+spec:
+  selector:
+    app.kubernetes.io/name: minio
+  ports:
+    - name: console-port
+      protocol: TCP
+      port: 9090
+      targetPort: console-port
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: minio-ui
+  namespace: minio-dev
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: minio.k8s.bnh.vn
+      http:
+        paths:
+          - backend:
+              service:
+                name: minio-console
+                port:
+                  number: 9090
+            pathType: ImplementationSpecific
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: minio-service
+  namespace: minio-dev
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: svc.minio.k8s.bnh.vn
+      http:
+        paths:
+          - backend:
+              service:
+                name: minio-service
+                port:
+                  number: 9000
+            pathType: ImplementationSpecific
