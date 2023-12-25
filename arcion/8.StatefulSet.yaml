@@ -1,0 +1,71 @@
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: arcion-compute
+  namespace: arcion
+spec:
+  serviceName: "arcion-compute"
+  replicas: 2
+  selector:
+    matchLabels:
+      app: arcion-compute
+  template:
+    metadata:
+      labels:
+        app: arcion-compute
+    spec:
+      volumes:
+        - name: license
+          configMap:
+            name: arcion-license
+            items:
+              - key: "replicant.lic"
+                path: "replicant.lic"
+        # - name: bootstrap
+        #   configMap:
+        #     name: arcion-bootstrap-script
+      containers:
+        - name: arcion-compute
+          image: arcionlabs/replicant-on-premises:20231031.1
+          envFrom:
+            - configMapRef:
+                name: arcion-config
+          env:
+            - name: MODE
+              value: COMPUTE
+            - name: CLUSTER_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          ports:
+            - containerPort: 8080
+              name: console-port
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "2"
+            limits:
+              memory: "1Gi"
+              cpu: "2"
+          command:
+            - /bin/bash
+            - -c
+          args:
+            - python3 bootstrap.py
+          volumeMounts:
+            - name: arcion-data
+              mountPath: /data
+            - name: license
+              mountPath: /config
+            # - name: bootstrap
+            #   mountPath: /arcion/bootstrap.py
+            #   subPath: bootstrap.py
+  volumeClaimTemplates:
+    - metadata:
+        name: arcion-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 1Gi

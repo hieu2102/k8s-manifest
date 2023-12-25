@@ -1,0 +1,45 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: arcion
+  name: ntp-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ntp-server
+  template:
+    metadata:
+      labels:
+        app: ntp-server
+    spec:
+      containers:
+        - name: ntp
+          image: dockurr/chrony:latest
+          ports:
+            - containerPort: 123
+              protocol: UDP
+              name: ntp-port
+          resources:
+            requests:
+              memory: "100Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "200m"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ntp-server
+  namespace: arcion
+spec:
+  selector:
+    app: ntp-server
+  ports:
+    - name: ntp-port
+      protocol: UDP
+      port: 123
+      targetPort: ntp-port

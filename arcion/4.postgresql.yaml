@@ -1,0 +1,71 @@
+
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  namespace: arcion
+  name: postgres-pv-claim # Sets name of PVC
+  labels:
+    app: postgres
+spec:
+  storageClassName: longhorn
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce # Sets read and write access
+  resources:
+    requests:
+      storage: 5Gi # Sets volume size
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: arcion
+  name: postgres # Sets Deployment name
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:14-alpine
+          imagePullPolicy: "IfNotPresent"
+          resources:
+            requests:
+              memory: "2Gi"
+              cpu: "2"
+            limits:
+              memory: "2Gi"
+              cpu: "2"
+          ports:
+            - containerPort: 5432
+              name: postgres-np
+          envFrom:
+            - configMapRef:
+                name: postgres-config
+          volumeMounts:
+            - mountPath: /var/lib/postgresql/data
+              name: postgredb
+      volumes:
+        - name: postgredb
+          persistentVolumeClaim:
+            claimName: postgres-pv-claim
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-svc
+  namespace: arcion
+spec:
+  selector:
+    app: postgres
+  ports:
+    - name: postgres-np
+      protocol: TCP
+      port: 5432
+      targetPort: postgres-np

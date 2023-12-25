@@ -1,0 +1,20 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: arcion-ui
+  namespace: arcion
+  annotations:
+    nginx.org/listen-ports: "8080"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: "arcion.k8s.bnh.vn"
+      http:
+        paths:
+          - backend:
+              service:
+                name: arcion-ui
+                port:
+                  number: 8080
+            pathType: ImplementationSpecific

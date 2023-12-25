@@ -1,0 +1,92 @@
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: arcion-pvc
+  namespace: arcion
+spec:
+  resources:
+    requests:
+      storage: 2Gi
+  accessModes:
+    - ReadWriteOnce
+  volumeMode: Filesystem
+  storageClassName: longhorn
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: arcion
+  name: arcion-ui
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: arcion-ui
+  template:
+    metadata:
+      labels:
+        app: arcion-ui
+    spec:
+      volumes:
+        - name: arcion-data
+          persistentVolumeClaim:
+            claimName: arcion-pvc
+        - name: license
+          configMap:
+            name: arcion-license
+            items:
+              - key: "replicant.lic"
+                path: "replicant.lic"
+        # - name: bootstrap
+        #   configMap:
+        #     name: arcion-bootstrap-script
+      containers:
+        - name: arcion-ui
+          image: arcionlabs/replicant-on-premises:20231031.1
+          envFrom:
+            - configMapRef:
+                name: arcion-config
+          env:
+            - name: MODE
+              value: UI
+            - name: CLUSTER_NODE_NAME
+              value: WEB-UI
+          ports:
+            - containerPort: 8080
+              name: console-port
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "2"
+            limits:
+              memory: "1Gi"
+              cpu: "2"
+          command:
+            - /bin/bash
+            - -c
+          args:
+            - python3 bootstrap.py
+          volumeMounts:
+            - name: arcion-data
+              mountPath: /data
+            - name: license
+              mountPath: /config
+            # - name: bootstrap
+            #   mountPath: /arcion/bootstrap.py
+            #   subPath: bootstrap.py
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: arcion-ui
+  namespace: arcion
+spec:
+  selector:
+    app: arcion-ui
+  ports:
+    - name: console-port
+      protocol: TCP
+      port: 8080
+      targetPort: console-port
