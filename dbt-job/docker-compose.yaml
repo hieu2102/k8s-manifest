@@ -1,0 +1,9 @@
+---
+version: '3.3'
+services:
+  dbt:
+    image: dbt-vertica:latest
+    volumes:
+      - /home/dbt_projects/vertica_upsert:/usr/app
+      - /root/.dbt/profiles.yml:/root/.dbt/profiles.yml
+    command: ls
