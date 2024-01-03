@@ -5,7 +5,7 @@ metadata:
   namespace: arcion
 spec:
   containers:
-    - image: busybox
+    - image: alpine:3.12
       command:
         - sleep
         - "3600"

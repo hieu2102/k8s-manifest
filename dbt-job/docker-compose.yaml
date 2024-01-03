@@ -6,4 +6,4 @@ services:
     volumes:
       - /home/dbt_projects/vertica_upsert:/usr/app
       - /root/.dbt/profiles.yml:/root/.dbt/profiles.yml
-    command: ls
+    command: run-operation run_proc
