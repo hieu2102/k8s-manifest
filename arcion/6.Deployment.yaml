@@ -1,18 +1,4 @@
 ---
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: arcion-pvc
-  namespace: arcion
-spec:
-  resources:
-    requests:
-      storage: 2Gi
-  accessModes:
-    - ReadWriteOnce
-  volumeMode: Filesystem
-  storageClassName: longhorn
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -29,6 +15,9 @@ spec:
         app: arcion-ui
     spec:
       volumes:
+        - name: libs
+          persistentVolumeClaim:
+            claimName: filebrowser-pvc
         - name: arcion-data
           persistentVolumeClaim:
             claimName: arcion-pvc
@@ -38,12 +27,10 @@ spec:
             items:
               - key: "replicant.lic"
                 path: "replicant.lic"
-        # - name: bootstrap
-        #   configMap:
-        #     name: arcion-bootstrap-script
       containers:
         - name: arcion-ui
-          image: arcionlabs/replicant-on-premises:20231031.1
+          image: bnh/arcion-replicant:latest
+          imagePullPolicy: Never
           envFrom:
             - configMapRef:
                 name: arcion-config
@@ -57,10 +44,10 @@ spec:
               name: console-port
           resources:
             requests:
-              memory: "1Gi"
+              memory: "4Gi"
               cpu: "2"
             limits:
-              memory: "1Gi"
+              memory: "4Gi"
               cpu: "2"
           command:
             - /bin/bash
@@ -72,9 +59,8 @@ spec:
               mountPath: /data
             - name: license
               mountPath: /config
-            # - name: bootstrap
-            #   mountPath: /arcion/bootstrap.py
-            #   subPath: bootstrap.py
+            - name: libs
+              mountPath: /libs
 
 ---
 apiVersion: v1

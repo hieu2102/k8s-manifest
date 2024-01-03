@@ -16,18 +16,23 @@ spec:
         app: arcion-compute
     spec:
       volumes:
+        - name: libs
+          persistentVolumeClaim:
+            claimName: filebrowser-pvc
+        - name: arcion-data
+          persistentVolumeClaim:
+            claimName: arcion-pvc
         - name: license
           configMap:
             name: arcion-license
             items:
               - key: "replicant.lic"
                 path: "replicant.lic"
-        # - name: bootstrap
-        #   configMap:
-        #     name: arcion-bootstrap-script
       containers:
         - name: arcion-compute
-          image: arcionlabs/replicant-on-premises:20231031.1
+          # image: arcionlabs/replicant-on-premises:20231031.1
+          image: bnh/arcion-replicant:latest
+          imagePullPolicy: Never
           envFrom:
             - configMapRef:
                 name: arcion-config
@@ -43,11 +48,11 @@ spec:
               name: console-port
           resources:
             requests:
-              memory: "1Gi"
+              memory: "4Gi"
               cpu: "2"
             limits:
-              memory: "1Gi"
-              cpu: "2"
+              memory: "8Gi"
+              cpu: "4"
           command:
             - /bin/bash
             - -c
@@ -58,14 +63,13 @@ spec:
               mountPath: /data
             - name: license
               mountPath: /config
-            # - name: bootstrap
-            #   mountPath: /arcion/bootstrap.py
-            #   subPath: bootstrap.py
-  volumeClaimTemplates:
-    - metadata:
-        name: arcion-data
-      spec:
-        accessModes: ["ReadWriteOnce"]
-        resources:
-          requests:
-            storage: 1Gi
+            - name: libs
+              mountPath: /libs
+  # volumeClaimTemplates:
+  #   - metadata:
+  #       name: arcion-data
+  #     spec:
+  #       accessModes: ["ReadWriteOnce"]
+  #       resources:
+  #         requests:
+  #           storage: 1Gi

@@ -1,0 +1,42 @@
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: arcion-pvc
+  namespace: arcion
+spec:
+  resources:
+    requests:
+      storage: 2Gi
+  accessModes:
+    - ReadWriteMany
+  volumeMode: Filesystem
+  storageClassName: longhorn
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: filebrowser-pvc
+  namespace: arcion
+spec:
+  resources:
+    requests:
+      storage: 500Mi
+  accessModes:
+    - ReadWriteMany
+  volumeMode: Filesystem
+  storageClassName: longhorn
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: filebrowser-db
+  namespace: arcion
+spec:
+  resources:
+    requests:
+      storage: 500Mi
+  accessModes:
+    - ReadWriteOnce
+  volumeMode: Filesystem
+  storageClassName: longhorn

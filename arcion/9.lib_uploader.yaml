@@ -1,0 +1,76 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: arcion
+  name: filebrowser
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: filebrowser
+  template:
+    metadata:
+      labels:
+        app: filebrowser
+    spec:
+      containers:
+        - name: filebrowser
+          image: filebrowser/filebrowser:v2-s6
+          imagePullPolicy: "IfNotPresent"
+          resources:
+            requests:
+              memory: "500Mi"
+              cpu: "200m"
+            limits:
+              memory: "1Gi"
+              cpu: "200m"
+          ports:
+            - containerPort: 80
+              name: filebrowser-np
+          volumeMounts:
+            - mountPath: /root/filebrowser.db
+              name: filebrowser-db
+            - mountPath: /srv
+              name: filebrowser-pv
+      volumes:
+        - name: filebrowser-pv
+          persistentVolumeClaim:
+            claimName: filebrowser-pvc
+        - name: filebrowser-db
+          persistentVolumeClaim:
+            claimName: filebrowser-db
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: filebrowser-svc
+  namespace: arcion
+spec:
+  selector:
+    app: filebrowser
+  ports:
+    - name: filebrowser-np
+      protocol: TCP
+      port: 80
+      targetPort: filebrowser-np
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: filebrowser-ui
+  namespace: arcion
+  annotations:
+    nginx.org/listen-ports: "80"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: "filebrowser.k8s.bnh.vn"
+      http:
+        paths:
+          - backend:
+              service:
+                name: filebrowser-svc
+                port:
+                  number: 80
+            pathType: ImplementationSpecific
