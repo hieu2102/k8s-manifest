@@ -17,6 +17,25 @@ ls
 ```
 
 ## Create k8s cronjob
+*Notes*: files' names for `from-file` args must match the example
+
+### Create git-sync credentials
+Generate SSH key
+```bash
+ssh-keygen -t rsa -b 4096 -f ssh
+```
+
+Create `kubernetes secret`
+
+```bash
+kubectl create secret generic git-creds --from-file=./ssh -n dbt
+```
+
+### Create dbt's `profile.yml` `configmap`
+
+```bash
+kubectl create configmap dbt-profiles --from-file=./profiles.yml -n dbt
+```
 ### Update git sync variables
 - GIT_SYNC_REPO
 - GIT_SYNC_BRANCH 
